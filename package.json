@@ -1,0 +1,78 @@
+{
+  "name": "claude-netlog",
+  "productName": "Claude NetLog",
+  "version": "0.2.0",
+  "description": "Live network recorder for Claude Code: every request it makes, grouped by chat session, with HAR import/export.",
+  "main": "main.js",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.js",
+    "verify": "node scripts/verify.js",
+    "smoke": "node scripts/smoke-run.js",
+    "icon": "node scripts/render-icon.js",
+    "dist": "electron-builder --publish never",
+    "dist:mac": "electron-builder --mac --arm64 --x64 --publish never",
+    "dist:win": "electron-builder --win --x64 --publish never",
+    "dist:linux": "electron-builder --linux --x64 --publish never"
+  },
+  "build": {
+    "appId": "dev.claude-netlog.app",
+    "productName": "Claude NetLog",
+    "artifactName": "claude-netlog-${version}-${os}-${arch}.${ext}",
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*",
+      "renderer/**/*",
+      "build/icon.png",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "icon": "build/icon.png"
+    },
+    "dmg": {
+      "artifactName": "claude-netlog-${version}-mac-${arch}.${ext}"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "artifactName": "claude-netlog-${version}-win-${arch}-setup.${ext}",
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "portable": {
+      "artifactName": "claude-netlog-${version}-win-${arch}-portable.${ext}"
+    },
+    "linux": {
+      "category": "Development",
+      "target": [
+        "AppImage",
+        "tar.gz"
+      ],
+      "icon": "build/icon.png",
+      "executableName": "claude-netlog",
+      "synopsis": "Live network recorder for Claude Code"
+    }
+  },
+  "devDependencies": {
+    "electron": "^45.3.2",
+    "electron-builder": "^26.18.0"
+  },
+  "author": "Claude NetLog contributors"
+}

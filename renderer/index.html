@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Claude NetLog</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <aside id="sidebar">
+      <div class="side-head">
+        <div class="brand"><img class="brand-mark" src="../build/icon.png" alt="">Claude NetLog</div>
+        <button id="btn-roots" class="icon-btn" title="Config folders">Folders</button>
+      </div>
+      <div class="rec-bar">
+        <button id="btn-rec" class="rec-btn" title="Start / stop recording (Cmd/Ctrl+E)"><span class="rec-icon"></span><span class="rec-label">Record</span></button>
+        <button id="btn-clear" class="icon-btn" title="Clear captured requests (Cmd/Ctrl+K)">Clear</button>
+        <button id="btn-import" class="icon-btn" title="Import HAR (Cmd/Ctrl+O)">Import</button>
+        <button id="btn-export" class="icon-btn" title="Export everything captured as HAR (Cmd/Ctrl+S)">Export</button>
+      </div>
+      <div id="rec-status" class="rec-status"></div>
+      <div id="account-filter" class="chips account-filter"></div>
+      <div class="side-search">
+        <input id="session-search" type="search" placeholder="Filter sessions" spellcheck="false">
+      </div>
+      <div id="session-list" class="session-list"></div>
+      <div id="side-foot" class="side-foot"></div>
+    </aside>
+
+    <main id="main">
+      <div id="empty" class="empty">
+        <div class="empty-inner" id="empty-inner"></div>
+      </div>
+
+      <div id="session-view" hidden>
+        <header id="session-head" class="session-head"></header>
+        <div class="toolbar">
+          <input id="call-search" type="search" placeholder="Filter requests" spellcheck="false">
+          <div id="kind-chips" class="chips"></div>
+          <select id="source-select" title="Main thread or subagent"></select>
+          <label class="toggle"><input id="errors-only" type="checkbox"> Errors</label>
+          <label class="toggle"><input id="follow" type="checkbox" checked> Follow</label>
+        </div>
+        <div id="split" class="split">
+          <section id="table-wrap" class="table-wrap">
+            <table id="calls" class="calls">
+              <thead>
+                <tr>
+                  <th class="c-n">#</th>
+                  <th class="c-name">Name</th>
+                  <th class="c-host">Host</th>
+                  <th class="c-kind">Type</th>
+                  <th class="c-src">Source</th>
+                  <th class="c-model">Model</th>
+                  <th class="c-status">Status</th>
+                  <th class="c-tok">Tokens</th>
+                  <th class="c-time">Time</th>
+                  <th class="c-start">Started</th>
+                  <th class="c-wf">Waterfall</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+            <div id="no-calls" class="no-calls" hidden>No requests match.</div>
+          </section>
+          <div id="divider" class="divider" hidden></div>
+          <section id="detail" class="detail" hidden></section>
+        </div>
+        <footer id="summary" class="summary"></footer>
+      </div>
+    </main>
+  </div>
+
+  <div id="roots-dialog" class="modal" hidden>
+    <div class="modal-card">
+      <h2>Accounts &amp; config folders</h2>
+      <p class="muted">Each Claude config folder is one account (for example <code>~/.claude</code> and <code>~/.claude-personal</code>). Untick a folder to stop recording it. Found automatically: <code>~/.claude</code>, <code>~/.claude-*</code>, <code>~/.config/claude</code> and <code>$CLAUDE_CONFIG_DIR</code>. Add any other folder that contains a <code>projects</code> directory.</p>
+      <ul id="roots-list" class="roots-list"></ul>
+      <div class="modal-actions">
+        <button id="roots-add" class="btn">Add folder…</button>
+        <button id="roots-close" class="btn primary">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!--
+    Claude NetLog: a request waterfall.
+    1024 grid, macOS tile 824 @ 100 with 186 corner radius.
+    Bars: 80 tall on a 120 pitch, each starting 80 later than the one above
+    (requests over time). The newest bar is the live one, in accent orange.
+  -->
+  <rect x="100" y="100" width="824" height="824" rx="186" fill="#EEE8DD"/>
+  <rect x="101" y="101" width="822" height="822" rx="185" fill="none" stroke="#000000" stroke-opacity="0.08" stroke-width="2"/>
+
+  <g fill="#17171B">
+    <rect x="232" y="292" width="304" height="80"/>
+    <rect x="312" y="412" width="392" height="80"/>
+    <rect x="392" y="532" width="240" height="80"/>
+  </g>
+  <rect x="472" y="652" width="320" height="80" fill="#D4572A"/>
+</svg>
