@@ -2,9 +2,10 @@
 import Base from '../layouts/Base.astro';
 import PixelField from '../components/PixelField.astro';
 import Demo from '../components/Demo.astro';
-import { REPO, REPO_URL, RELEASES_URL, VERSION } from '../site';
+import { REPO, REPO_URL, RELEASES_URL, VERSION, url } from '../site';
 
 const year = new Date().getFullYear();
+const installCmd = `curl -fsSL ${new URL(url('install.sh'), Astro.site).href} | sh`;
 
 const platforms = [
   { os: 'mac', name: 'macOS', files: [['mac-arm64', 'Apple Silicon', '.dmg'], ['mac-x64', 'Intel', '.dmg']] },
@@ -40,13 +41,37 @@ const points = [
       <h1>cLogs</h1>
       <p class="tagline">Every request Claude Code makes, as it happens.</p>
 
-      <div class="cta">
-        <a class="btn" href={RELEASES_URL} data-primary-download>
-          <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1v9m0 0L4.5 6.5M8 10l3.5-3.5M2 13.5h12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="square" /></svg>
-          <span data-primary-label>Download</span>
-        </a>
-        <span class="req" data-req>Free · macOS, Windows, Linux</span>
+      <div class="install" data-mac-only>
+        <span class="prompt" aria-hidden="true">$</span>
+        <code data-cmd>{installCmd}</code>
+        <button type="button" class="copy" data-copy aria-label="Copy install command">
+          <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><rect x="5" y="5" width="9" height="9" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+          <span data-copy-label>Copy</span>
+        </button>
       </div>
+      <p class="req" data-mac-only>Paste into Terminal. It installs cLogs to Applications and opens it. Run it again to update. <span data-req>Free · macOS 12 or later · Apple Silicon and Intel</span></p>
+
+      <div class="cta">
+        <a class="btn ghost" href={RELEASES_URL} data-primary-download>
+          <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1v9m0 0L4.5 6.5M8 10l3.5-3.5M2 13.5h12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="square" /></svg>
+          <span data-primary-label>Or download the .dmg</span>
+        </a>
+        <a class="install-src" href={url('install.sh')} data-mac-only>View the install script</a>
+        <span class="req" data-other-only hidden>Free · macOS, Windows, Linux</span>
+      </div>
+
+      <details class="more" id="first-launch" data-mac-only>
+        <summary>Downloaded the .dmg? How to open it the first time</summary>
+        <p>macOS checks apps downloaded in a browser, and cLogs isn't notarized by Apple yet, so the first launch needs one extra step:</p>
+        <ol>
+          <li>Open the .dmg and drag <b>cLogs</b> into Applications.</li>
+          <li>Open cLogs. macOS says it can't verify the app. Click <b>Done</b>, not Move to Trash.</li>
+          <li>Open <b>System Settings → Privacy &amp; Security</b>, scroll down, and click <b>Open Anyway</b> next to cLogs.</li>
+          <li>Enter your password and click <b>Open</b>. From then on it opens normally.</li>
+        </ol>
+        <p>Or skip those steps by running this once in Terminal:</p>
+        <pre><code>xattr -dr com.apple.quarantine /Applications/cLogs.app</code></pre>
+      </details>
 
       <details class="more" id="downloads" data-repo={REPO}>
         <summary>All downloads</summary>
@@ -61,7 +86,7 @@ const points = [
             </div>
           ))}
         </div>
-        <p class="hint-sm">Builds aren't notarized yet. On a Mac, open the app once, then choose Open Anyway in System Settings → Privacy &amp; Security.</p>
+        <p class="hint-sm">On a Mac, see <a href="#first-launch" data-open-first-launch>how to open it the first time</a>. On Windows, if SmartScreen warns, choose More info → Run anyway.</p>
       </details>
 
 
@@ -114,6 +139,28 @@ npm start</code></pre>
   }));
   syncTheme();
 
+  // ---- copy the install command ----
+  const copyBtn = document.querySelector<HTMLButtonElement>('[data-copy]');
+  copyBtn?.addEventListener('click', async () => {
+    const code = document.querySelector<HTMLElement>('[data-cmd]')!;
+    try {
+      await navigator.clipboard.writeText(code.textContent!.trim());
+    } catch {
+      // No clipboard access (old browser, insecure context): select the text so Cmd-C works.
+      getSelection()?.selectAllChildren(code);
+      return;
+    }
+    const label = copyBtn.querySelector('[data-copy-label]')!;
+    label.textContent = 'Copied';
+    copyBtn.classList.add('done');
+    setTimeout(() => { label.textContent = 'Copy'; copyBtn.classList.remove('done'); }, 1600);
+  });
+
+  // ---- show the first-launch steps after a Mac download ----
+  const firstLaunch = document.getElementById('first-launch') as HTMLDetailsElement | null;
+  document.querySelectorAll('[data-primary-download], [data-asset^="mac-"], [data-open-first-launch]').forEach((el) =>
+    el.addEventListener('click', () => { if (firstLaunch && !firstLaunch.hidden) firstLaunch.open = true; }));
+
   // ---- downloads: detect OS, fill links from the latest GitHub release ----
   type Asset = { name: string; browser_download_url: string; size: number };
   const PATTERNS: Record<string, RegExp> = {
@@ -125,7 +172,7 @@ npm start</code></pre>
     'linux-tar': /linux-.*\.tar\.gz$/i,
   };
   const PRIMARY: Record<string, string> = { mac: 'mac-arm64', 'mac-intel': 'mac-x64', win: 'win-setup', linux: 'linux-appimage' };
-  const LABEL: Record<string, string> = { mac: 'Download for macOS', 'mac-intel': 'Download for macOS (Intel)', win: 'Download for Windows', linux: 'Download for Linux' };
+  const LABEL: Record<string, string> = { mac: 'Or download the .dmg', 'mac-intel': 'Or download the .dmg (Intel)', win: 'Download for Windows', linux: 'Download for Linux' };
   const repo = document.querySelector<HTMLElement>('#downloads')?.dataset.repo;
 
   async function detect(): Promise<string | null> {
@@ -153,6 +200,12 @@ npm start</code></pre>
     const [os, rel] = await Promise.all([detect(), latest()]);
     const primary = document.querySelector<HTMLAnchorElement>('[data-primary-download]')!;
     const label = document.querySelector('[data-primary-label]')!;
+    if (os && !os.startsWith('mac')) {
+      // Windows / Linux: no Terminal install, so the download button leads.
+      document.querySelectorAll<HTMLElement>('[data-mac-only]').forEach((el) => { el.hidden = true; });
+      document.querySelectorAll<HTMLElement>('[data-other-only]').forEach((el) => { el.hidden = false; });
+      primary.classList.remove('ghost');
+    }
     if (os) {
       label.textContent = LABEL[os];
       document.querySelector(`.frow[data-os="${os.startsWith('mac') ? 'mac' : os}"]`)?.classList.add('is-rec');
@@ -199,7 +252,7 @@ npm start</code></pre>
   h1 { margin: 32px 0 8px; font-size: clamp(40px, 6vw, 54px); line-height: 1.02; letter-spacing: -.035em; font-weight: 700; }
   .tagline { margin: 0; font-size: 19.5px; line-height: 1.55; color: var(--ink-2); max-width: 36em; text-wrap: pretty; }
 
-  .cta { margin: 34px 0 22px; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+  .cta { margin: 22px 0 22px; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
   .btn {
     display: inline-flex; align-items: center; gap: 9px; height: 48px; padding: 0 22px; border-radius: 999px;
     background: var(--ink); color: var(--paper); font: 500 15.5px/1 var(--sans); text-decoration: none; white-space: nowrap;
@@ -208,6 +261,28 @@ npm start</code></pre>
   .btn:hover { opacity: .86; }
   .btn:active { transform: translateY(1px); }
   .req { font-size: 14px; color: var(--muted); }
+  [hidden] { display: none !important; }
+
+  .install {
+    margin: 34px 0 0; display: flex; align-items: center; gap: 10px; max-width: 100%;
+    padding: 8px 8px 8px 18px; border-radius: 14px; background: var(--mock-bg); color: var(--mock-text);
+    box-shadow: 0 0 0 1px var(--mock-ring), 0 14px 30px -18px rgba(0, 0, 0, .55);
+    font: 14px/1.4 var(--mono);
+  }
+  .install .prompt { color: var(--mock-muted); user-select: none; }
+  .install code { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; font-size: 14px; scrollbar-width: none; }
+  .install code::-webkit-scrollbar { display: none; }
+  .copy {
+    flex: none; display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border: 0; border-radius: 9px;
+    background: rgba(255, 255, 255, .1); color: var(--mock-text); font: 500 13px/1 var(--sans); cursor: pointer; transition: background .15s;
+  }
+  .copy:hover { background: rgba(255, 255, 255, .17); }
+  .copy.done { color: #30d158; }
+  .install + .req { margin: 12px 0 0; max-width: 40em; line-height: 1.5; }
+  .btn.ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); height: 42px; font-size: 14.5px; }
+  .btn.ghost:hover { opacity: 1; box-shadow: inset 0 0 0 1px var(--ink); }
+  .install-src { font-size: 14px; color: var(--muted); text-underline-offset: 3px; }
+  .install-src:hover { color: var(--ink); }
 
   .more { margin: 0; padding: 6px 0; font-size: 15px; color: var(--ink-2); }
   .more summary { cursor: pointer; color: var(--muted); font-size: 14px; list-style: none; width: max-content; }
@@ -217,7 +292,7 @@ npm start</code></pre>
   .more summary:hover { color: var(--ink); }
   .more > :not(summary) { margin-left: 1.1em; }
   .more p { margin: 10px 0; }
-  .more ul { margin: 8px 0 12px; padding-left: 18px; }
+  .more ul, .more ol { margin: 8px 0 12px; padding-left: 18px; }
   .more li { margin: 4px 0; }
   .more a { color: var(--ink); }
   .more code { background: var(--code-bg); border-radius: 4px; padding: 1px 5px; }
@@ -231,6 +306,7 @@ npm start</code></pre>
   .frow a { display: flex; justify-content: space-between; gap: 8px; padding: 7px 11px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); text-decoration: none; font-size: 14px; }
   .frow a:hover { border-color: var(--ink); }
   .frow a span { font: 12px/1.6 var(--mono); color: var(--muted); white-space: nowrap; }
+
 
   .hint-sm { font-size: 13.5px; color: var(--muted); }
 

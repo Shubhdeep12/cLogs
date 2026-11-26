@@ -12,7 +12,17 @@ Shortcuts: Cmd/Ctrl+E start/stop · Cmd/Ctrl+K clear · Cmd/Ctrl+O import · Cmd
 
 ## Download
 
-Get it from the website (it picks the right file for your OS): **https://shubhdeep12.github.io/clogs/**. Or grab a build directly from the repository's **Releases** page:
+On a Mac, paste this into Terminal:
+
+```sh
+curl -fsSL https://clogs.okshubh.in/install.sh | sh
+```
+
+It downloads the latest release, checks it against `SHA256SUMS.txt`, puts cLogs.app in `/Applications` (or `~/Applications`) and opens it. Installing this way skips the "Apple could not verify" warning, because files downloaded with curl aren't quarantined. The script is [`site/public/install.sh`](site/public/install.sh). Run the same command again to update.
+
+### Or download a build
+
+From the website (it picks the right file for your OS), **https://clogs.okshubh.in**, or the repository's **Releases** page:
 
 | OS | File |
 |----|------|
@@ -23,9 +33,18 @@ Get it from the website (it picks the right file for your OS): **https://shubhde
 
 `SHA256SUMS.txt` on each release lists the checksums.
 
-The builds are not code-signed, so the first launch needs one extra step:
+cLogs isn't notarized by Apple or signed for Windows yet, so the first launch of a downloaded build needs one extra step:
 
-- **macOS:** open the app once, then go to **System Settings → Privacy & Security** and click **Open Anyway** (on macOS 14 and earlier, right-click the app → **Open** also works). Or run `xattr -dr com.apple.quarantine "/Applications/cLogs.app"`.
+- **macOS:** the first launch shows *"Apple could not verify “cLogs” is free of malware"*.
+  1. Click **Done** in that dialog.
+  2. Open **System Settings → Privacy & Security**, scroll down, and click **Open Anyway** next to the cLogs message.
+  3. Confirm with your password. After that it opens normally.
+
+  Or skip the dialog by running this once in Terminal:
+
+  ```sh
+  xattr -dr com.apple.quarantine /Applications/cLogs.app
+  ```
 - **Windows:** SmartScreen shows "Windows protected your PC". Click **More info** → **Run anyway**.
 - **Linux:** run `chmod +x clogs-*.AppImage`, then launch it. Some distros need `libfuse2` for AppImages.
 
