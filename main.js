@@ -5,10 +5,11 @@ const path = require('path');
 const { candidateRoots } = require('./src/discover');
 const { Recorder } = require('./src/recorder');
 const { buildHar, parseHar } = require('./src/har');
+const { Updater } = require('./src/updater');
 
 let win = null;
 let roots = [];
-let settings = { extraRoots: [], disabledRoots: [] };
+let settings = { extraRoots: [], disabledRoots: [], autoUpdate: true };
 let detectedRoots = [];
 let viewKey = null;
 let importSeq = 0;
@@ -17,7 +18,7 @@ const imports = new Map(); // id -> { id, name, sessions: ImportedSession[] }
 const userFile = (n) => path.join(app.getPath('userData'), n);
 
 function loadSettings() {
-  try { settings = { extraRoots: [], disabledRoots: [], ...JSON.parse(fs.readFileSync(userFile('settings.json'), 'utf8')) }; } catch { /* defaults */ }
+  try { settings = { extraRoots: [], disabledRoots: [], autoUpdate: true, ...JSON.parse(fs.readFileSync(userFile('settings.json'), 'utf8')) }; } catch { /* defaults */ }
 }
 function saveSettings() {
   try { fs.writeFileSync(userFile('settings.json'), JSON.stringify(settings, null, 2)); } catch { /* ignore */ }
@@ -108,8 +109,33 @@ const stamp = () => new Date().toISOString().replace(/[:T]/g, '-').slice(0, 19);
 
 // ---------- IPC ----------
 
+const updater = new Updater({
+  onChange: (st) => send('update', st),
+  isEnabled: () => settings.autoUpdate !== false,
+});
+
+/** Menu "Check for Updates…": like the automatic check, but always answers. */
+async function checkForUpdatesNow() {
+  const st = await updater.check();
+  const opts = { type: 'info', buttons: ['OK'], message: '' };
+  if (st.status === 'current') opts.message = `cLogs ${app.getVersion()} is the latest version.`;
+  else if (st.status === 'error') Object.assign(opts, { type: 'warning', message: 'Couldn\'t check for updates.', detail: st.error });
+  else if (st.status === 'available') {
+    Object.assign(opts, {
+      message: `cLogs ${st.latest} is available.`,
+      detail: `You have ${app.getVersion()}.${st.canInstall ? '' : ' This copy can\'t update itself, so the download page will open.'}`,
+      buttons: [st.canInstall ? 'Update and Restart' : 'Open Download Page', 'Later'],
+      defaultId: 0, cancelId: 1,
+    });
+  } else return;
+  const { response } = win ? await dialog.showMessageBox(win, opts) : await dialog.showMessageBox(opts);
+  if (st.status === 'available' && response === 0) updater.install();
+}
+
 function registerIpc() {
   ipcMain.handle('state', () => state());
+  ipcMain.handle('update:state', () => updater.state);
+  ipcMain.handle('update:install', () => updater.install());
   ipcMain.handle('rec:start', async () => { refreshRoots(); await recorder.start(); return state(); });
   ipcMain.handle('rec:stop', async () => { await recorder.stop(); return state(); });
   ipcMain.handle('rec:clear', async () => {
@@ -227,8 +253,23 @@ function createWindow() {
 function buildMenu() {
   const isMac = process.platform === 'darwin';
   const toggle = () => (recorder.recording ? recorder.stop() : (refreshRoots(), recorder.start()));
+  const updateItems = [
+    { label: 'Check for Updates…', click: () => checkForUpdatesNow() },
+    {
+      label: 'Check for Updates Automatically', type: 'checkbox', checked: settings.autoUpdate !== false,
+      click: (item) => { settings.autoUpdate = item.checked; saveSettings(); if (item.checked) updater.schedule(0); },
+    },
+  ];
   Menu.setApplicationMenu(Menu.buildFromTemplate([
-    ...(isMac ? [{ role: 'appMenu' }] : []),
+    ...(isMac ? [{
+      label: app.name,
+      submenu: [
+        { role: 'about' }, ...updateItems, { type: 'separator' },
+        { role: 'services' }, { type: 'separator' },
+        { role: 'hide' }, { role: 'hideOthers' }, { role: 'unhide' }, { type: 'separator' },
+        { role: 'quit' },
+      ],
+    }] : []),
     {
       label: 'File',
       submenu: [
@@ -256,6 +297,7 @@ function buildMenu() {
       ],
     },
     { role: 'windowMenu' },
+    ...(isMac ? [] : [{ label: 'Help', submenu: updateItems }]),
   ]));
 }
 
@@ -273,6 +315,7 @@ app.whenReady().then(async () => {
   // Like DevTools, start recording as soon as the app opens.
   const since = Number(process.env.CALLS_SMOKE_SINCE) || undefined;
   await recorder.start({ since });
+  if (!process.env.CALLS_SMOKE_OUT) updater.schedule();
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 });
 

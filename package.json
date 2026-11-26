@@ -1,7 +1,7 @@
 {
   "name": "clogs",
   "productName": "cLogs",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Live network recorder for Claude Code: every request it makes, grouped by chat session, with HAR import/export.",
   "main": "main.js",
   "license": "MIT",

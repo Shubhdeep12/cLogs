@@ -60,6 +60,7 @@ Build each platform on that platform. The output goes to `dist/`.
   ```
 
   The workflow checks that the tag matches `package.json`, runs the tests, builds the installers, and publishes a GitHub Release with the files, checksums and generated notes. Running the workflow by hand (**Actions → Release → Run workflow**) builds the installers as downloadable run artifacts without publishing a release.
+- **In-app updates.** The app checks the latest release on launch and every 6 hours, and shows an **Update** button when there's a newer version. It downloads the file for its platform, checks it against `SHA256SUMS.txt`, installs it and relaunches: on macOS it swaps the `.app` in place (from the `-mac-<arch>.zip`), on Windows it runs the setup `.exe` silently, and on Linux it replaces the AppImage. The portable `.exe`, the `.tar.gz` and copies run straight from the DMG open the release page instead. Keep these asset names and `SHA256SUMS.txt` in every release.
 - **Code signing is optional.** To sign, add electron-builder's signing secrets (`CSC_LINK`, `CSC_KEY_PASSWORD`, plus `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD` and `APPLE_TEAM_ID` for notarization) and remove `CSC_IDENTITY_AUTO_DISCOVERY: "false"` from the workflow.
 
 ## Website
@@ -115,7 +116,7 @@ Each tail entry is `sha256(canonical JSON of the message)`. Messages missing fro
 
 ## Privacy
 
-Everything stays on this machine. The app only reads Claude's folders, never writes to them, and makes no network requests. Captured data lives in memory until you export it. Transcripts contain your prompts, code and tool output, so be careful when sharing screenshots or copied payloads.
+Everything stays on this machine. The app only reads Claude's folders and never writes to them. Its one network request is the update check: an anonymous request to the GitHub API for the latest release, which sends nothing about your sessions. Turn it off with **Check for Updates Automatically** in the app menu. Captured data lives in memory until you export it. Transcripts contain your prompts, code and tool output, so be careful when sharing screenshots or copied payloads.
 
 ## Layout
 
@@ -127,10 +128,11 @@ src/recorder.js    live recorder: watching, recording windows, start/stop/clear
 src/transcript.js  incremental JSONL parser + request reconstruction
 src/session.js     main + subagent transcripts → request list and details
 src/har.js         HAR 1.2 export / import
+src/updater.js     in-app updates from GitHub Releases
 src/smoke.js       self-test: `npm run smoke -- <outDir> [session] [hours-back]`
 renderer/          UI (plain HTML/CSS/JS, no build step)
 build/icon.svg     app icon source (build/icon.png is rendered from it)
-scripts/           verify, smoke runner, icon renderer
+scripts/           verify, smoke runner, icon renderer, ad-hoc signing hook
 site/              download page (Astro), deployed to GitHub Pages
 test/              unit tests (node:test) + synthetic transcript fixture
 .github/workflows/ CI and release pipelines

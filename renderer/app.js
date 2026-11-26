@@ -147,6 +147,31 @@ function renderEmpty() {
   $('#empty-line').textContent = line;
 }
 
+// ---------- updates ----------
+function renderUpdate(u) {
+  const bar = $('#update-bar');
+  const show = u && ['available', 'downloading', 'installing'].includes(u.status);
+  bar.hidden = !show;
+  if (!show) return;
+  const busy = u.status !== 'available';
+  bar.classList.toggle('busy', busy);
+  const sub = $('#ub-sub');
+  sub.classList.toggle('err', Boolean(u.error) && !busy);
+  if (u.status === 'available') {
+    $('#ub-title').textContent = `cLogs ${u.latest} is available`;
+    sub.textContent = u.error || (u.canInstall ? 'Installs and restarts in seconds.' : 'Opens the download page.');
+    $('#ub-btn').textContent = u.error ? 'Try Again' : u.canInstall ? 'Update' : 'Download';
+  } else if (u.status === 'downloading') {
+    $('#ub-title').textContent = `Downloading ${u.latest}…`;
+    sub.textContent = `${Math.round((u.progress || 0) * 100)}%`;
+  } else {
+    $('#ub-title').textContent = 'Restarting…';
+    sub.textContent = 'cLogs will reopen on its own.';
+  }
+  $('#ub-btn').hidden = busy;
+  $('#ub-fill').style.width = `${Math.round((u.progress || 0) * 100)}%`;
+}
+
 function applyState(st) {
   if (!st) return;
   S.rec = st;
@@ -685,6 +710,9 @@ function wire() {
   });
 
   bridge.onState(applyState);
+  bridge.onUpdate(renderUpdate);
+  bridge.updateState().then(renderUpdate);
+  $('#ub-btn').addEventListener('click', () => bridge.installUpdate());
   bridge.onMenu((m) => {
     if (m === 'import') $('#btn-import').click();
     else if (m === 'export') $('#btn-export').click();

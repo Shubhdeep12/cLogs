@@ -24,7 +24,10 @@ contextBridge.exposeInMainWorld('bridge', {
   removeRoot: (dir) => ipcRenderer.invoke('roots:remove', dir),
   toggleRoot: (dir, on) => ipcRenderer.invoke('roots:toggle', dir, on),
   reveal: (key) => ipcRenderer.invoke('file:reveal', key),
+  updateState: () => ipcRenderer.invoke('update:state'),
+  installUpdate: () => ipcRenderer.invoke('update:install'),
   onState: on('state'),
+  onUpdate: on('update'),
   onViewUpdate: on('view:update'),
   onMenu: on('menu'),
 });
