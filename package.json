@@ -1,7 +1,7 @@
 {
   "name": "clogs",
   "productName": "cLogs",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Live network recorder for Claude Code: every request it makes, grouped by chat session, with HAR import/export.",
   "main": "main.js",
   "license": "MIT",
@@ -21,6 +21,7 @@
     "appId": "dev.clogs.app",
     "productName": "cLogs",
     "artifactName": "clogs-${version}-${os}-${arch}.${ext}",
+    "afterPack": "scripts/after-pack.js",
     "files": [
       "main.js",
       "preload.js",

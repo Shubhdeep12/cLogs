@@ -25,7 +25,7 @@ Get it from the website (it picks the right file for your OS): **https://shubhde
 
 The builds are not code-signed, so the first launch needs one extra step:
 
-- **macOS:** right-click the app → **Open** → **Open**. Or run `xattr -dr com.apple.quarantine "/Applications/cLogs.app"`.
+- **macOS:** open the app once, then go to **System Settings → Privacy & Security** and click **Open Anyway** (on macOS 14 and earlier, right-click the app → **Open** also works). Or run `xattr -dr com.apple.quarantine "/Applications/cLogs.app"`.
 - **Windows:** SmartScreen shows "Windows protected your PC". Click **More info** → **Run anyway**.
 - **Linux:** run `chmod +x clogs-*.AppImage`, then launch it. Some distros need `libfuse2` for AppImages.
 
