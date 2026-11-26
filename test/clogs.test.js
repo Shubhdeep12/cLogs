@@ -11,7 +11,7 @@ const { buildHar, parseHar } = require('../src/har');
 const { buildTranscript, toJSONL } = require('./fixture');
 
 function tmpRoot() {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'netlog-test-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'calls-test-'));
   fs.mkdirSync(path.join(root, 'projects', '-work-demo'), { recursive: true });
   return root;
 }
@@ -103,7 +103,7 @@ test('HAR export → import round trip keeps payloads and responses', async () =
   }
   const api = har.log.entries.find((e) => e.response.headers.some((h) => h.value === 'req_2'));
   assert.equal(api.response.status, 200);
-  assert.equal(har.log.entries.find((e) => e._netlog.summary.status === '529').response.status, 529);
+  assert.equal(har.log.entries.find((e) => e._clogs.summary.status === '529').response.status, 529);
 
   const [imp] = parseHar(JSON.parse(JSON.stringify(har)), 'x.har', 'imp1');
   assert.equal(imp.calls().length, s.calls().length);
@@ -115,7 +115,7 @@ test('HAR export → import round trip keeps payloads and responses', async () =
   assert.equal(imp.info().title, 'Fixture session');
 });
 
-test('imports a generic (non-NetLog) HAR', () => {
+test('imports a generic (non-cLogs) HAR', () => {
   const har = { log: { version: '1.2', entries: [{
     startedDateTime: '2026-01-01T00:00:00.000Z', time: 42,
     request: { method: 'POST', url: 'https://api.anthropic.com/v1/messages', headers: [{ name: 'content-type', value: 'application/json' }], postData: { text: '{"model":"m","messages":[]}' } },

@@ -1,0 +1,257 @@
+---
+import Base from '../layouts/Base.astro';
+import PixelField from '../components/PixelField.astro';
+import Demo from '../components/Demo.astro';
+import { REPO, REPO_URL, RELEASES_URL, VERSION } from '../site';
+
+const year = new Date().getFullYear();
+
+const platforms = [
+  { os: 'mac', name: 'macOS', files: [['mac-arm64', 'Apple Silicon', '.dmg'], ['mac-x64', 'Intel', '.dmg']] },
+  { os: 'win', name: 'Windows', files: [['win-setup', 'Installer', '.exe'], ['win-portable', 'Portable', '.exe']] },
+  { os: 'linux', name: 'Linux', files: [['linux-appimage', 'AppImage', '.AppImage'], ['linux-tar', 'Archive', '.tar.gz']] },
+];
+
+const points = [
+  ['Every request', 'API calls, tool runs, MCP, web fetches and subagents, grouped by chat.'],
+  ['The whole payload', 'System prompt, messages, tools and token usage. Copy as cURL or save as HAR.'],
+  ['Stays on your machine', 'cLogs reads the transcripts Claude Code already writes. No proxy, no setup.'],
+];
+---
+<Base title="cLogs · Every request Claude Code makes">
+  <PixelField />
+  <main>
+    <div class="col hero">
+      <div class="logo" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="100 100 824 824">
+          <defs>
+            <linearGradient id="lg-tile" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a3a3c"/><stop offset="1" stop-color="#141415"/></linearGradient>
+            <linearGradient id="lg-rim" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".18"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient>
+            <linearGradient id="lg-gl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#d6d6db"/></linearGradient>
+          </defs>
+          <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#lg-tile)"/>
+          <rect x="102" y="102" width="820" height="820" rx="183" fill="none" stroke="url(#lg-rim)" stroke-width="4"/>
+          <rect x="100.5" y="100.5" width="823" height="823" rx="184.5" fill="none" stroke="#000" stroke-opacity=".1"/>
+          <path transform="translate(214.6 705.5)" d="M157.70564697265627 6.24Q116.02242919921875 6.24 85.165615234375 -11.66880126953125Q54.30880126953125 -29.5776025390625 37.22159301757813 -62.30640380859375Q20.134384765625 -95.035205078125 20.134384765625 -138.94400634765626Q20.134384765625 -182.8528076171875 37.22159301757813 -215.32160888671876Q54.30880126953125 -247.79041015625 85.165615234375 -265.9592114257813Q116.02242919921875 -284.1280126953125 157.70564697265627 -284.1280126953125Q193.31526855468752 -284.1280126953125 221.33288696289065 -271.575205078125Q249.35050537109376 -259.0223974609375 266.8953161621094 -235.52878540039063Q284.440126953125 -212.03517333984377 288.6625244140625 -178.60955810546875L217.50558349609375 -175.03195556640625Q213.5119873046875 -201.44794921875 197.475205078125 -215.12394287109376Q181.4384228515625 -228.7999365234375 157.70564697265627 -228.7999365234375Q126.15208251953125 -228.7999365234375 108.7217041015625 -205.04635620117188Q91.29132568359375 -181.29277587890627 91.29132568359375 -138.94400634765626Q91.29132568359375 -96.36643554687501 108.7217041015625 -72.61285522460938Q126.15208251953125 -48.85927490234375 157.70564697265627 -48.85927490234375Q181.66722412109377 -48.85927490234375 197.8184069824219 -62.97206665039063Q213.96958984375001 -77.0848583984375 217.50558349609375 -106.22564697265625L288.6625244140625 -103.10564697265626Q284.66892822265623 -69.68003173828126 267.35291870117186 -45.11522094726563Q250.0369091796875 -20.55041015625 222.01929077148438 -7.155205078124999Q194.00167236328124 6.24 157.70564697265627 6.24Z M330.6559619140625 0.0V-369.2H400.54410156250003V-21.02880126953125L362.3968139648438 -60.38249267578125H574.6192431640625V0.0Z" fill="url(#lg-gl)" />
+        </svg>
+      </div>
+
+
+      <h1>cLogs</h1>
+      <p class="tagline">Every request Claude Code makes, as it happens.</p>
+
+      <div class="cta">
+        <a class="btn" href={RELEASES_URL} data-primary-download>
+          <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1v9m0 0L4.5 6.5M8 10l3.5-3.5M2 13.5h12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="square" /></svg>
+          <span data-primary-label>Download</span>
+        </a>
+        <span class="req" data-req>Free · macOS, Windows, Linux</span>
+      </div>
+
+      <details class="more" id="downloads" data-repo={REPO}>
+        <summary>All downloads</summary>
+        <p data-release-status>From <a href={RELEASES_URL}>GitHub Releases</a>, with checksums.</p>
+        <div class="files">
+          {platforms.map((p) => (
+            <div class="frow" data-os={p.os}>
+              <b>{p.name}</b>
+              {p.files.map(([key, label, ext]) => (
+                <a href={RELEASES_URL} data-asset={key}>{label} <span>{ext}<span data-size></span></span></a>
+              ))}
+            </div>
+          ))}
+        </div>
+        <p class="hint-sm">Builds aren't signed yet. On a Mac, right-click the app and choose Open the first time.</p>
+      </details>
+
+
+      <details class="more" id="source">
+        <summary>Build from source</summary>
+        <p>Needs Node.js 22 or later.</p>
+        <pre><code>git clone {REPO_URL}.git
+cd clogs
+npm install
+npm start</code></pre>
+      </details>
+    </div>
+
+    <Demo />
+
+    <div class="col">
+      <ul class="points">
+        {points.map(([t, d]) => <li><h2>{t}</h2><p>{d}</p></li>)}
+      </ul>
+
+      <footer>
+        <div class="frow-foot">
+          &copy; {year} cLogs · MIT
+          <span class="sep">·</span><a href={REPO_URL}>GitHub</a>
+          <span class="sep">·</span><a href={`${REPO_URL}/issues`}>Issues</a>
+          <span class="sep">·</span><a href="https://okshubh.in">okshubh.in</a>
+        </div>
+        <div class="theme-switch" role="group" aria-label="Color theme">
+          <button type="button" data-theme-choice="system" aria-pressed="true">System</button>
+          <button type="button" data-theme-choice="light" aria-pressed="false">Light</button>
+          <button type="button" data-theme-choice="dark" aria-pressed="false">Dark</button>
+        </div>
+        <p class="fine">Not affiliated with Anthropic. Claude Code is a trademark of Anthropic, PBC.</p>
+      </footer>
+    </div>
+  </main>
+</Base>
+
+<script>
+  // ---- theme switch (System / Light / Dark) ----
+  const html = document.documentElement;
+  const themeBtns = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-theme-choice]'));
+  const currentTheme = () => html.getAttribute('data-theme') || 'system';
+  const syncTheme = () => themeBtns.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.themeChoice === currentTheme())));
+  themeBtns.forEach((b) => b.addEventListener('click', () => {
+    const t = b.dataset.themeChoice!;
+    if (t === 'system') html.removeAttribute('data-theme'); else html.setAttribute('data-theme', t);
+    try { if (t === 'system') localStorage.removeItem('theme'); else localStorage.setItem('theme', t); } catch {}
+    syncTheme();
+  }));
+  syncTheme();
+
+  // ---- downloads: detect OS, fill links from the latest GitHub release ----
+  type Asset = { name: string; browser_download_url: string; size: number };
+  const PATTERNS: Record<string, RegExp> = {
+    'mac-arm64': /mac-arm64\.dmg$/i,
+    'mac-x64': /mac-x64\.dmg$/i,
+    'win-setup': /win-.*setup\.exe$/i,
+    'win-portable': /win-.*portable\.exe$/i,
+    'linux-appimage': /linux-.*\.AppImage$/i,
+    'linux-tar': /linux-.*\.tar\.gz$/i,
+  };
+  const PRIMARY: Record<string, string> = { mac: 'mac-arm64', 'mac-intel': 'mac-x64', win: 'win-setup', linux: 'linux-appimage' };
+  const LABEL: Record<string, string> = { mac: 'Download for macOS', 'mac-intel': 'Download for macOS (Intel)', win: 'Download for Windows', linux: 'Download for Linux' };
+  const repo = document.querySelector<HTMLElement>('#downloads')?.dataset.repo;
+
+  async function detect(): Promise<string | null> {
+    const ua = navigator.userAgent;
+    if (/Android|iPhone|iPad|iPod/i.test(ua)) return null;
+    const uad = (navigator as any).userAgentData;
+    let arch = '';
+    try { if (uad?.getHighEntropyValues) arch = (await uad.getHighEntropyValues(['architecture'])).architecture || ''; } catch {}
+    if (/Mac/i.test(ua)) return arch === 'x86' ? 'mac-intel' : 'mac';
+    if (/Win/i.test(ua)) return 'win';
+    if (/Linux|X11/i.test(ua)) return 'linux';
+    return null;
+  }
+
+  async function latest(): Promise<{ tag: string; assets: Asset[] } | null> {
+    try {
+      const r = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, { headers: { Accept: 'application/vnd.github+json' } });
+      if (!r.ok) return null;
+      const j = await r.json();
+      return { tag: j.tag_name, assets: j.assets || [] };
+    } catch { return null; }
+  }
+
+  (async () => {
+    const [os, rel] = await Promise.all([detect(), latest()]);
+    const primary = document.querySelector<HTMLAnchorElement>('[data-primary-download]')!;
+    const label = document.querySelector('[data-primary-label]')!;
+    if (os) {
+      label.textContent = LABEL[os];
+      document.querySelector(`.frow[data-os="${os.startsWith('mac') ? 'mac' : os}"]`)?.classList.add('is-rec');
+    }
+
+    if (!rel) {
+      // No release yet: send people to the source instructions.
+      document.querySelector('[data-release-status]')!.innerHTML = 'No release yet. Build from source for now.';
+      document.querySelector('[data-req]')!.textContent = 'First release soon · build from source for now';
+      primary.href = '#source';
+      primary.addEventListener('click', () => { (document.getElementById('source') as HTMLDetailsElement).open = true; });
+      return;
+    }
+
+    const found = new Map<string, Asset>();
+    for (const a of rel.assets) for (const [k, re] of Object.entries(PATTERNS)) if (re.test(a.name)) found.set(k, a);
+    document.querySelectorAll<HTMLElement>('[data-version]').forEach((el) => { el.textContent = rel.tag; });
+    document.querySelectorAll<HTMLAnchorElement>('[data-asset]').forEach((el) => {
+      const a = found.get(el.dataset.asset!);
+      if (!a) return;
+      el.href = a.browser_download_url;
+      const s = el.querySelector('[data-size]');
+      if (s) s.textContent = ` · ${Math.round(a.size / 1048576)} MB`;
+    });
+    const asset = os && found.get(PRIMARY[os]);
+    if (asset) primary.href = asset.browser_download_url;
+    else primary.href = '#downloads';
+  })();
+</script>
+
+<style>
+  main { position: relative; z-index: 1; }
+
+  .hero { padding-top: 88px; }
+  .logo {
+    width: 64px; height: 64px; animation: rise .7s cubic-bezier(.2, .8, .2, 1) .05s both;
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .12)) drop-shadow(0 10px 18px rgba(0, 0, 0, .22));
+  }
+  .logo svg { border-radius: 22.5%; }
+  @keyframes rise { from { opacity: 0; transform: translateY(6px) scale(.96); } }
+
+  .sep { margin: 0 9px; color: var(--muted); opacity: .6; }
+
+  h1 { margin: 32px 0 8px; font-size: clamp(40px, 6vw, 54px); line-height: 1.02; letter-spacing: -.035em; font-weight: 700; }
+  .tagline { margin: 0; font-size: 19.5px; line-height: 1.55; color: var(--ink-2); max-width: 36em; text-wrap: pretty; }
+
+  .cta { margin: 34px 0 22px; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 9px; height: 48px; padding: 0 22px; border-radius: 999px;
+    background: var(--ink); color: var(--paper); font: 500 15.5px/1 var(--sans); text-decoration: none; white-space: nowrap;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, .12) inset, 0 8px 20px -10px rgba(0, 0, 0, .5); transition: opacity .15s, transform .12s;
+  }
+  .btn:hover { opacity: .86; }
+  .btn:active { transform: translateY(1px); }
+  .req { font-size: 14px; color: var(--muted); }
+
+  .more { margin: 0; padding: 6px 0; font-size: 15px; color: var(--ink-2); }
+  .more summary { cursor: pointer; color: var(--muted); font-size: 14px; list-style: none; width: max-content; }
+  .more summary::-webkit-details-marker { display: none; }
+  .more summary::before { content: '▸'; display: inline-block; width: 1.1em; transition: transform .15s; }
+  .more[open] summary::before { transform: rotate(90deg); }
+  .more summary:hover { color: var(--ink); }
+  .more > :not(summary) { margin-left: 1.1em; }
+  .more p { margin: 10px 0; }
+  .more ul { margin: 8px 0 12px; padding-left: 18px; }
+  .more li { margin: 4px 0; }
+  .more a { color: var(--ink); }
+  .more code { background: var(--code-bg); border-radius: 4px; padding: 1px 5px; }
+  .more pre { margin: 8px 0 10px 1.1em; padding: 14px 16px; border-radius: 10px; background: var(--mock-bg); color: var(--mock-text); font-size: 13px; line-height: 1.7; overflow-x: auto; }
+  .more pre code { background: none; padding: 0; }
+
+  .files { display: grid; gap: 6px; margin: 4px 0 10px 1.1em; }
+  .frow { display: grid; grid-template-columns: 84px 1fr 1fr; gap: 8px; align-items: center; }
+  .frow b { font-weight: 600; color: var(--ink); }
+  .frow.is-rec b::after { content: ' ●'; color: var(--accent); font-size: 10px; vertical-align: 2px; }
+  .frow a { display: flex; justify-content: space-between; gap: 8px; padding: 7px 11px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); text-decoration: none; font-size: 14px; }
+  .frow a:hover { border-color: var(--ink); }
+  .frow a span { font: 12px/1.6 var(--mono); color: var(--muted); white-space: nowrap; }
+
+  .hint-sm { font-size: 13.5px; color: var(--muted); }
+
+  .points { list-style: none; margin: 64px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
+  .points h2 { margin: 0 0 6px; font-size: 17px; font-weight: 600; letter-spacing: -.01em; color: var(--ink); }
+  .points p { margin: 0; font-size: 15px; line-height: 1.5; color: var(--muted); text-wrap: pretty; }
+
+  footer { margin: 56px 0 0; padding: 0 0 48px; font-size: 14px; color: var(--muted); }
+  .frow-foot a { color: var(--muted); text-underline-offset: 3px; }
+  .frow-foot a:hover { color: var(--ink); }
+  .theme-switch { display: inline-flex; margin-top: 16px; padding: 3px; gap: 2px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); }
+  .theme-switch button { font: 500 13px/1 var(--sans); padding: 7px 11px; border: 0; border-radius: 6px; background: transparent; color: var(--ink-2); cursor: pointer; }
+  .theme-switch button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+  .fine { margin: 18px 0 0; font-size: 12.5px; }
+
+  @media (max-width: 720px) {
+    .hero { padding-top: 48px; }
+    .tagline { font-size: 17.5px; }
+    .cta { gap: 12px; }
+    .frow { grid-template-columns: 1fr 1fr; }
+    .frow b { grid-column: 1 / -1; }
+    .points { grid-template-columns: 1fr; gap: 22px; margin-top: 44px; }
+  }
+</style>

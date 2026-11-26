@@ -7,7 +7,7 @@ const on = (channel) => (cb) => {
   return () => ipcRenderer.removeListener(channel, h);
 };
 
-contextBridge.exposeInMainWorld('netlog', {
+contextBridge.exposeInMainWorld('bridge', {
   platform: process.platform,
   state: () => ipcRenderer.invoke('state'),
   start: () => ipcRenderer.invoke('rec:start'),

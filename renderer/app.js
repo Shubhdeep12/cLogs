@@ -1,5 +1,5 @@
 'use strict';
-/* global netlog */
+/* global bridge */
 
 // ---------- helpers ----------
 const $ = (s) => document.querySelector(s);
@@ -125,7 +125,7 @@ function renderSessions() {
   for (const s of rec) frag.append(sessItem(s, S.rec.recording && Date.now() - s.lastMs < 60000));
   for (const imp of S.rec.imports) {
     frag.append(h('div', { class: 'side-sec' }, h('span', { title: imp.name }, `Imported · ${imp.name}`),
-      h('button', { class: 'x-btn', title: 'Remove this import', onclick: async () => { const st = await netlog.removeImport(imp.id); applyState(st); } }, '×')));
+      h('button', { class: 'x-btn', title: 'Remove this import', onclick: async () => { const st = await bridge.removeImport(imp.id); applyState(st); } }, '×')));
     for (const s of imp.sessions.filter(match)) frag.append(sessItem(s, false));
   }
   $('#session-list').replaceChildren(frag);
@@ -137,12 +137,14 @@ function renderEmpty() {
   if (S.key) return;
   $('#empty').hidden = false;
   $('#session-view').hidden = true;
-  $('#empty-inner').replaceChildren(
-    h('h1', null, S.rec.recording ? 'Recording' : 'Not recording'),
-    h('p', null, S.rec.recording
-      ? 'Claude NetLog is capturing every request Claude Code makes from now on: Anthropic API calls, web fetches and searches, MCP tools and subagents. Each chat shows up on the left; pick one to inspect it.'
-      : 'Press Record to capture requests, or Import a HAR file to inspect an earlier capture.'),
-    h('p', { class: 'muted' }, 'Read from Claude Code\'s local transcripts. No proxy, nothing leaves this machine.'));
+  const rec = S.rec.recording;
+  const any = S.rec.sessions.length > 0 || S.rec.imports.length > 0;
+  const [title, line] = any ? ['Select a chat', 'Its requests open here.']
+    : rec ? ['Waiting for requests', 'Use Claude Code as usual. Chats appear on the left.']
+    : ['Not recording', 'Press Record to start, or import a HAR file.'];
+  $('#empty-art').classList.toggle('live', rec);
+  $('#empty-title').textContent = title;
+  $('#empty-line').textContent = line;
 }
 
 function applyState(st) {
@@ -155,7 +157,7 @@ function applyState(st) {
 
 function closeView() {
   S.key = null; S.info = null; S.calls = []; S.sel = null; S.detail = null;
-  netlog.closeView();
+  bridge.closeView();
   hideDetail();
   renderEmpty();
 }
@@ -170,7 +172,7 @@ async function openView(key) {
   $('#session-head').replaceChildren(h('div', { class: 'sh-title' }, 'Loading…'));
   $('#calls tbody').replaceChildren();
   hideDetail();
-  const r = await netlog.openView(key);
+  const r = await bridge.openView(key);
   if (token !== S.openToken) return;
   if (!r) { closeView(); return; }
   S.info = r.info; S.calls = r.calls;
@@ -183,7 +185,7 @@ function renderHead() {
   $('#session-head').replaceChildren(
     h('div', { class: 'sh-row' },
       h('div', { class: 'sh-title', title: i.title }, i.title),
-      h('button', { class: 'btn', onclick: () => netlog.exportHar(S.key) }, 'Export HAR')),
+      h('button', { class: 'btn', onclick: () => bridge.exportHar(S.key) }, 'Export HAR')),
     h('div', { class: 'sh-meta' },
       live ? h('span', { class: 'live-pill' }, '● live') : null,
       i.imported ? h('span', { class: 'badge' }, `imported from ${i.imported}`) : null,
@@ -192,7 +194,7 @@ function renderHead() {
       i.gitBranch ? h('span', null, `⎇ ${i.gitBranch}`) : null,
       i.version ? h('span', null, `Claude Code ${i.version}`) : null,
       i.sessionId ? h('span', { title: i.sessionId }, `session ${String(i.sessionId).slice(0, 8)}`) : null,
-      !i.imported ? h('button', { class: 'link-btn', onclick: () => netlog.reveal(S.key) }, 'Show transcript') : null),
+      !i.imported ? h('button', { class: 'link-btn', onclick: () => bridge.reveal(S.key) }, 'Show transcript') : null),
   );
 }
 
@@ -308,7 +310,7 @@ async function selectCall(id) {
   S.sel = id;
   for (const tr of document.querySelectorAll('#calls tbody tr')) tr.classList.toggle('sel', tr.dataset.id === id);
   const key = S.key;
-  const d = await netlog.getDetail(key, id);
+  const d = await bridge.getDetail(key, id);
   if (S.sel !== id || S.key !== key) return;
   S.detail = d;
   renderDetail();
@@ -642,16 +644,16 @@ function setupDivider() {
 
 // ---------- roots dialog ----------
 async function showRoots() {
-  const r = await netlog.listRoots();
+  const r = await bridge.listRoots();
   const ul = $('#roots-list');
   ul.replaceChildren(...r.roots.map((p) => {
     const on = r.enabled.includes(p);
     const box = h('input', { type: 'checkbox' });
     box.checked = on;
-    box.addEventListener('change', async () => { await netlog.toggleRoot(p, box.checked); showRoots(); });
+    box.addEventListener('change', async () => { await bridge.toggleRoot(p, box.checked); showRoots(); });
     return h('li', null,
       h('label', { class: 'root-row', title: on ? 'Recording this account' : 'Not recording this account' }, box, h('span', null, p)),
-      r.extraRoots.includes(p) ? h('button', { class: 'btn', onclick: async () => { await netlog.removeRoot(p); showRoots(); } }, 'Remove') : h('span', { class: 'muted' }, 'auto-detected'));
+      r.extraRoots.includes(p) ? h('button', { class: 'btn', onclick: async () => { await bridge.removeRoot(p); showRoots(); } }, 'Remove') : h('span', { class: 'muted' }, 'auto-detected'));
   }));
   if (!r.roots.length) ul.append(h('li', null, 'No Claude config folders found.'));
   $('#roots-dialog').hidden = false;
@@ -666,7 +668,7 @@ function wire() {
   $('#follow').addEventListener('change', (e) => { S.follow = e.target.checked; if (S.follow) renderTable(true); });
   $('#btn-roots').addEventListener('click', showRoots);
   $('#roots-close').addEventListener('click', () => { $('#roots-dialog').hidden = true; });
-  $('#roots-add').addEventListener('click', async () => { await netlog.addRoot(); showRoots(); });
+  $('#roots-add').addEventListener('click', async () => { await bridge.addRoot(); showRoots(); });
 
   document.addEventListener('keydown', (e) => {
     if (e.target.matches('input, select, textarea')) return;
@@ -682,24 +684,24 @@ function wire() {
     if (tr) tr.scrollIntoView({ block: 'nearest' });
   });
 
-  netlog.onState(applyState);
-  netlog.onMenu((m) => {
+  bridge.onState(applyState);
+  bridge.onMenu((m) => {
     if (m === 'import') $('#btn-import').click();
     else if (m === 'export') $('#btn-export').click();
     else if (m === 'clear') $('#btn-clear').click();
   });
-  $('#btn-rec').addEventListener('click', async () => applyState(S.rec.recording ? await netlog.stop() : await netlog.start()));
-  $('#btn-clear').addEventListener('click', async () => applyState(await netlog.clear()));
-  $('#btn-import').addEventListener('click', async () => applyState(await netlog.importHar()));
-  $('#btn-export').addEventListener('click', () => netlog.exportHar('recording'));
-  netlog.onViewUpdate(async (p) => {
+  $('#btn-rec').addEventListener('click', async () => applyState(S.rec.recording ? await bridge.stop() : await bridge.start()));
+  $('#btn-clear').addEventListener('click', async () => applyState(await bridge.clear()));
+  $('#btn-import').addEventListener('click', async () => applyState(await bridge.importHar()));
+  $('#btn-export').addEventListener('click', () => bridge.exportHar('recording'));
+  bridge.onViewUpdate(async (p) => {
     if (p.key !== S.key) return;
     const sig = (c) => (c ? `${c.status}|${c.durationMs}|${c.tokensOut}` : '');
     const before = sig(S.calls.find((c) => c.id === S.sel));
     S.info = p.info; S.calls = p.calls;
     renderHead(); renderSourceSelect(); renderKindChips(); renderTable();
     if (S.sel && sig(S.calls.find((c) => c.id === S.sel)) !== before) {
-      const d = await netlog.getDetail(S.key, S.sel);
+      const d = await bridge.getDetail(S.key, S.sel);
       if (S.sel && d) { S.detail = d; renderDetail(); }
     }
   });
@@ -708,6 +710,6 @@ function wire() {
 
 (async function init() {
   wire();
-  applyState(await netlog.state());
+  applyState(await bridge.state());
   setInterval(renderSessions, 30000); // keep "x ago" and live dots fresh
 }());

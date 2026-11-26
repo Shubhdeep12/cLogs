@@ -1,0 +1,272 @@
+---
+import { SESSIONS } from '../demo/data';
+import { initialState, renderSide, renderChips, renderTable, renderDetail } from '../demo/render';
+const st = initialState(SESSIONS);
+---
+<section class="demo-section" id="demo" aria-label="Interactive demo">
+  <div class="wrap">
+    <div class="window untouched" data-demo>
+      <div class="chrome">
+        <i></i><i></i><i></i>
+        <span>cLogs</span>
+        <em class="badge">Interactive demo · made-up data</em>
+      </div>
+      <div class="body">
+        <aside class="side" data-r="side" set:html={renderSide(st)} />
+        <div class="main">
+          <div class="toolbar">
+            <input class="search" type="search" placeholder="Filter requests" aria-label="Filter requests" data-search />
+            <div class="pills" data-r="chips" set:html={renderChips(st)} />
+          </div>
+          <div class="table" data-r="table" set:html={renderTable(st)} />
+          <div class="hint" aria-hidden="true">Click any request</div>
+        </div>
+        <div class="detail" data-r="detail" set:html={renderDetail(st)} />
+      </div>
+      <div class="toast" data-toast role="status" aria-live="polite"></div>
+    </div>
+  </div>
+</section>
+
+<script>
+  import { SESSIONS, LIVE_SCRIPT, type Call } from '../demo/data';
+  import { initialState, renderSide, renderChips, renderTable, renderDetail, session, type State, type Tab, type Filter } from '../demo/render';
+
+  const root = document.querySelector<HTMLElement>('[data-demo]')!;
+  const st: State = initialState(structuredClone(SESSIONS));
+  const region = (n: string) => root.querySelector<HTMLElement>(`[data-r="${n}"]`)!;
+  const tableEl = region('table');
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function render(parts = ['side', 'chips', 'table', 'detail']) {
+    const nearBottom = tableEl.scrollTop + tableEl.clientHeight >= tableEl.scrollHeight - 30;
+    if (parts.includes('side')) region('side').innerHTML = renderSide(st);
+    if (parts.includes('chips')) region('chips').innerHTML = renderChips(st);
+    if (parts.includes('table')) region('table').innerHTML = renderTable(st);
+    if (parts.includes('detail')) region('detail').innerHTML = renderDetail(st);
+    if (nearBottom) tableEl.scrollTop = tableEl.scrollHeight;
+  }
+
+  let toastTimer = 0;
+  function toast(text: string) {
+    const t = root.querySelector<HTMLElement>('[data-toast]')!;
+    t.textContent = text;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = window.setTimeout(() => t.classList.remove('show'), 2600);
+  }
+
+  root.addEventListener('click', (e) => {
+    const el = (e.target as HTMLElement).closest<HTMLElement>('[data-act]');
+    if (!el) return;
+    root.classList.remove('untouched');
+    const id = el.dataset.id || '';
+    switch (el.dataset.act) {
+      case 'row':
+        st.sel = id;
+        render(['table', 'detail']);
+        break;
+      case 'tab':
+        st.tab = id as Tab;
+        render(['detail']);
+        break;
+      case 'filter':
+        st.filter = id as Filter;
+        render(['chips', 'table']);
+        break;
+      case 'session': {
+        st.sid = id;
+        st.filter = 'all';
+        const s = session(st);
+        st.sel = (s.calls.find((c) => c.kind === 'api') || s.calls[0] || { id: null }).id;
+        render();
+        break;
+      }
+      case 'record':
+        st.recording = !st.recording;
+        render(['side']);
+        toast(st.recording ? 'Recording: new requests stream in as Claude Code makes them.' : 'Stopped. Everything captured stays until you clear it.');
+        break;
+      case 'clear':
+        st.sessions.forEach((s) => { s.calls = []; });
+        st.sel = null;
+        render();
+        toast(st.recording ? 'Cleared. Still recording, so new requests will show up.' : 'Cleared.');
+        break;
+      case 'export':
+        toast('In the app, this saves the recording as a .har file (opens in Chrome DevTools too).');
+        break;
+    }
+  });
+
+  root.querySelector<HTMLInputElement>('[data-search]')!.addEventListener('input', (e) => {
+    root.classList.remove('untouched');
+    st.q = (e.target as HTMLInputElement).value;
+    render(['table']);
+  });
+
+  // ---- live: stream scripted requests into the first session while recording ----
+  let next = 0;
+  let inView = false;
+  new IntersectionObserver(([en]) => { inView = en.isIntersecting; }, { threshold: 0.3 }).observe(root);
+
+  function tick() {
+    if (!st.recording || !inView || document.hidden || reduced) return;
+    const s = st.sessions[0];
+    const script = LIVE_SCRIPT[next % LIVE_SCRIPT.length];
+    if (s.calls.length >= 14) return;
+    next++;
+    const last = s.calls[s.calls.length - 1];
+    const call: Call = { ...structuredClone(script), id: `live${next}`, at: last ? last.at + last.dur + 0.8 : 0, status: 'pending', statusClass: 'pending', tokensIn: undefined, tokensOut: undefined };
+    s.calls.push(call);
+    render(st.sid === s.id ? ['side', 'chips', 'table', ...(st.sel === call.id ? ['detail'] : [])] : ['side']);
+    window.setTimeout(() => {
+      Object.assign(call, structuredClone(script));
+      render(st.sid === s.id ? ['side', 'chips', 'table', ...(st.sel === call.id ? ['detail'] : [])] : ['side']);
+    }, 1700);
+  }
+  window.setInterval(tick, 4200);
+</script>
+
+<style>
+  .demo-section { position: relative; padding: 48px 0 16px; scroll-margin-top: 24px; }
+  .demo-section .wrap { position: relative; }
+  /* soft glow the window sits on */
+  .demo-section .wrap::before { content: ''; position: absolute; inset: 8% 6% -6%; border-radius: 50%; background: radial-gradient(closest-side, var(--glow-1), transparent); filter: blur(40px); pointer-events: none; }
+  .window { position: relative; margin: 0; border-radius: 14px; overflow: hidden; background: var(--mock-bg); color: var(--mock-text); box-shadow: 0 40px 80px -40px rgba(23,23,27,.55), 0 0 0 1px var(--mock-ring); font: 12.5px/1.45 var(--sans); }
+  .window :global(button) { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-align: left; }
+  .chrome { height: 36px; display: flex; align-items: center; gap: 7px; padding: 0 14px; background: var(--mock-side); border-bottom: 1px solid var(--mock-line); }
+  .chrome i { width: 11px; height: 11px; border-radius: 50%; background: #3a3a3c; }
+  .chrome span { margin-left: 10px; font-size: 12px; color: var(--mock-muted); }
+  .badge { margin-left: auto; font: 500 11px/1 var(--mono); font-style: normal; color: #aeaeb2; border: 1px solid #3a3a3c; border-radius: 999px; padding: 4px 9px; }
+  .body { display: grid; grid-template-columns: 216px minmax(0, 1fr) 340px; height: 440px; }
+
+  /* sidebar */
+  .side { background: var(--mock-side); border-right: 1px solid var(--mock-line); padding: 12px 10px; overflow-y: auto; }
+  .side :global(.recbar) { display: flex; gap: 5px; }
+  .side :global(.rec) { display: inline-flex !important; align-items: center; gap: 6px; border: 1px solid var(--mock-line) !important; border-radius: 6px; padding: 2px 9px !important; font-weight: 600; }
+  .side :global(.rec b) { width: 8px; height: 8px; border-radius: 50%; background: #ff453a; }
+  .side :global(.rec.on) { border-color: #ff453a !important; color: #ff453a; }
+  .side :global(.rec.on b) { border-radius: 1px; animation: pulse 1.4s ease-in-out infinite; }
+  .side :global(.chip) { border: 1px solid var(--mock-line) !important; border-radius: 6px; padding: 2px 8px !important; color: var(--mock-muted); }
+  .side :global(.chip:hover) { color: var(--mock-text); }
+  .side :global(.recstate) { display: flex; flex-direction: column; margin: 10px 2px 4px; color: var(--mock-muted); }
+  .side :global(.recstate b) { font-weight: 600; color: var(--mock-muted); }
+  .side :global(.recstate b.on) { color: #ff453a; }
+  .side :global(.sec) { margin: 12px 4px 4px; font: 600 10.5px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: #636366; }
+  .side :global(.sess) { position: relative; display: block !important; width: 100%; padding: 7px 8px 7px 20px !important; border-radius: 6px; }
+  .side :global(.sess:hover) { background: #2c2c2e; }
+  .side :global(.sess.sel) { background: #3a3a3c; }
+  .side :global(.live) { position: absolute; left: 8px; top: 13px; width: 6px; height: 6px; border-radius: 50%; background: #30d158; }
+  .side :global(.st) { display: block; color: var(--mock-text); }
+  .side :global(.sm) { display: flex; gap: 6px; flex-wrap: wrap; color: var(--mock-muted); font-size: 11.5px; margin-top: 2px; }
+  .side :global(.acct) { color: #c7c7cc; border: 1px solid #48484a; border-radius: 4px; padding: 0 4px; font-size: 10.5px; }
+  .side :global(.empty) { color: var(--mock-muted); margin: 6px 4px; }
+
+  /* table */
+  .main { position: relative; min-width: 0; display: flex; flex-direction: column; border-right: 1px solid var(--mock-line); }
+  .toolbar { display: flex; gap: 8px; align-items: center; padding: 9px 12px; border-bottom: 1px solid var(--mock-line); }
+  .search { width: 150px; flex: none; background: transparent; border: 1px solid var(--mock-line); border-radius: 6px; padding: 3px 9px; color: var(--mock-text); font: inherit; outline: none; }
+  .search:focus { border-color: #8e8e93; }
+  .pills { display: flex; gap: 5px; flex-wrap: wrap; }
+  .pills :global(.pill) { border: 1px solid var(--mock-line) !important; border-radius: 999px; padding: 1px 9px !important; color: var(--mock-muted); white-space: nowrap; }
+  .pills :global(.pill span) { opacity: .7; }
+  .pills :global(.pill:hover) { color: var(--mock-text); }
+  .pills :global(.pill.on) { background: var(--mock-text); color: var(--mock-bg); border-color: var(--mock-text) !important; }
+  .table { flex: 1; overflow-y: auto; font-size: 12px; scroll-behavior: smooth; }
+  .table :global(.tr) { display: grid !important; width: 100%; grid-template-columns: minmax(0, 1.7fr) 96px 66px 80px 56px minmax(50px, .7fr); gap: 10px; padding: 6px 12px !important; border-bottom: 1px solid var(--mock-line); align-items: center; white-space: nowrap; }
+  .table :global(.tr > span) { overflow: hidden; text-overflow: ellipsis; }
+  .table :global(button.tr:hover) { background: #262628; }
+  .table :global(.th) { position: sticky; top: 0; z-index: 1; color: var(--mock-muted); font-weight: 600; background: var(--mock-side); }
+  .table :global(.tr.sel) { background: #3a3a3c !important; }
+  .table :global(.tr.err .nm), .table :global(.s-error) { color: #ff6961; }
+  .table :global(.nm) { font-family: var(--mono); }
+  .table :global(.nm em) { font-style: normal; color: #636366; margin-right: 6px; font-size: 11px; }
+  .table :global(.tag) { font: 500 10px/1 var(--sans); font-style: normal; margin-left: 7px; padding: 1px 5px; border: 1px solid #48484a; color: #aeaeb2; border-radius: 4px; }
+  .table :global(.kind) { display: inline-flex; align-items: center; gap: 6px; }
+  .table :global(.kind::before) { content: ''; width: 7px; height: 7px; border-radius: 2px; background: var(--kc); flex: none; }
+  .table :global(.k-api) { --kc: #f5f5f7; }
+  .table :global(.k-mcp) { --kc: #98989d; }
+  .table :global(.k-web) { --kc: #5a5a5f; }
+  .table :global(.s-ok) { color: #30d158; }
+  .table :global(.s-pending) { color: #aeaeb2; }
+  .table :global(.c-t) { text-align: right; font-variant-numeric: tabular-nums; }
+  .table :global(.c-tok) { font-variant-numeric: tabular-nums; }
+  .table :global(.c-wf) { position: relative; height: 8px; }
+  .table :global(.c-wf i) { position: absolute; top: 1px; height: 6px; border-radius: 2px; background: #8e8e93; }
+  .table :global(.c-wf i.pending) { background: #f5f5f7; animation: pulse 1s ease-in-out infinite; }
+  .table :global(.c-wf i.error) { background: #ff6961; }
+  .table :global(.none) { padding: 28px 12px; color: var(--mock-muted); text-align: center; }
+  .table :global(button.tr) { animation: rowin .35s ease-out; }
+
+  .hint { position: absolute; left: 50%; top: 84px; transform: translateX(-50%); background: #f5f5f7; color: #1d1d1f; font-weight: 600; font-size: 12px; padding: 5px 11px; border-radius: 999px; pointer-events: none; opacity: 0; transition: opacity .3s; box-shadow: 0 6px 16px -6px rgba(0,0,0,.6); }
+  .hint::after { content: ''; position: absolute; left: 50%; top: 100%; margin-left: -5px; border: 5px solid transparent; border-top-color: #f5f5f7; }
+  .untouched .hint { opacity: 1; animation: bob 1.8s ease-in-out infinite; }
+
+  /* detail */
+  .detail { min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
+  .detail :global(.tabs) { display: flex; border-bottom: 1px solid var(--mock-line); background: var(--mock-side); flex: none; overflow-x: auto; }
+  .detail :global(.tabs button) { padding: 8px 10px !important; color: var(--mock-muted); border-bottom: 2px solid transparent !important; white-space: nowrap; }
+  .detail :global(.tabs button:hover) { color: var(--mock-text); }
+  .detail :global(.tabs button.on) { color: var(--mock-text); border-bottom-color: #f5f5f7 !important; }
+  .detail :global(.dbody) { flex: 1; overflow: auto; padding: 12px; }
+  .detail :global(.pick) { color: var(--mock-muted); padding: 24px 12px; text-align: center; margin: 0; }
+  .detail :global(.kvs) { margin-bottom: 14px; }
+  .detail :global(.kvh) { font-weight: 600; margin-bottom: 5px; }
+  .detail :global(.kvh span) { font-weight: 400; color: #636366; }
+  .detail :global(dl) { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 3px 12px; margin: 0; }
+  .detail :global(dt) { color: var(--mock-muted); }
+  .detail :global(dd) { margin: 0; font-family: var(--mono); font-size: 11.5px; overflow-wrap: anywhere; }
+  .detail :global(.stats) { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+  .detail :global(.stats span) { border: 1px solid var(--mock-line); border-radius: 6px; padding: 1px 7px; color: var(--mock-muted); }
+  .detail :global(.stats b) { color: var(--mock-text); font-weight: 600; }
+  .detail :global(.json) { margin: 0; font: 11.5px/1.6 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; color: var(--mock-muted); }
+  .detail :global(.jk) { color: #f5f5f7; }
+  .detail :global(.js) { color: #a3c9a0; }
+  .detail :global(.jn) { color: #d1d1d6; }
+  .detail :global(.jb) { color: #d1d1d6; }
+  .detail :global(.msg) { border: 1px solid var(--mock-line); border-radius: 8px; padding: 8px 10px; margin-bottom: 8px; }
+  .detail :global(.msg.resp) { border-color: #636366; }
+  .detail :global(.msg.err) { border-color: #ff6961; }
+  .detail :global(.mh) { font: 700 10.5px/1 var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--mock-muted); margin-bottom: 6px; }
+  .detail :global(.r-user) { color: #aeaeb2; }
+  .detail :global(.r-assistant), .detail :global(.resp .mh) { color: #f5f5f7; }
+  .detail :global(.bt) { margin: 0 0 6px; white-space: pre-wrap; }
+  .detail :global(.bt.mono) { font: 11.5px/1.55 var(--mono); }
+  .detail :global(.bk) { border: 1px solid var(--mock-line); border-radius: 6px; padding: 5px 8px; margin: 0 0 6px; background: #141415; }
+  .detail :global(.bk span), .detail :global(.bk summary) { display: block; font: 11px/1.5 var(--mono); color: var(--mock-muted); cursor: pointer; }
+  .detail :global(.bk code) { display: block; font: 11px/1.5 var(--mono); color: #c7c7cc; overflow-wrap: anywhere; white-space: pre-wrap; }
+  .detail :global(.bk p) { margin: 6px 0 2px; color: var(--mock-muted); font-style: italic; white-space: pre-wrap; }
+  .detail :global(.bk.sys) { margin-bottom: 10px; }
+  .detail :global(.hit) { display: grid; grid-template-columns: auto auto 1fr; gap: 10px; align-items: center; margin-bottom: 14px; }
+  .detail :global(.hit b) { font-size: 18px; }
+  .detail :global(.hit i) { height: 6px; background: var(--mock-line); border-radius: 3px; overflow: hidden; }
+  .detail :global(.hit s) { display: block; height: 100%; background: #30d158; }
+
+  .toast { position: absolute; left: 50%; bottom: 16px; transform: translate(-50%, 12px); background: var(--mock-text); color: var(--mock-bg); padding: 8px 14px; border-radius: 8px; font-weight: 500; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; max-width: calc(100% - 32px); text-align: center; }
+  .toast:global(.show) { opacity: 1; transform: translate(-50%, 0); }
+
+
+  @keyframes pulse { 50% { opacity: .4; } }
+  @keyframes rowin { from { background: #2c2c2e; } }
+  @keyframes bob { 50% { transform: translate(-50%, -4px); } }
+
+  @media (max-width: 1060px) {
+    .body { grid-template-columns: 200px minmax(0, 1fr); grid-template-rows: 300px 300px; height: auto; }
+    .detail { grid-column: 1 / -1; border-top: 1px solid var(--mock-line); }
+  }
+  @media (max-width: 720px) {
+    .demo-section { padding-top: 36px; }
+    .badge { display: none; }
+    .body { grid-template-columns: 1fr; grid-template-rows: auto 300px 320px; }
+    .side { border-right: 0; border-bottom: 1px solid var(--mock-line); padding: 10px; }
+    .side :global(.recstate), .side :global(.sec) { display: none; }
+    .side :global(.sessions) { display: flex; gap: 6px; overflow-x: auto; margin-top: 8px; }
+    .side :global(.sess) { flex: none; width: 210px; }
+    .main { border-right: 0; }
+    .search { display: none; }
+    .table :global(.tr) { grid-template-columns: minmax(0, 1fr) 62px 52px; }
+    .table :global(.c-kind), .table :global(.c-tok), .table :global(.c-wf) { display: none !important; }
+    .hint { top: 76px; }
+  }
+</style>

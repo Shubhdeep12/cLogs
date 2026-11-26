@@ -4,10 +4,11 @@
  *
  * Export: one HAR page per Claude session, one entry per captured call. Request
  * and response bodies go in the standard fields so the file also opens in
- * Chrome DevTools; NetLog-specific details live under `_netlog` (HAR allows
- * custom fields prefixed with "_").
+ * Chrome DevTools; app-specific details live under `_clogs` (HAR allows
+ * custom fields prefixed with "_"). HARs written before the rename used
+ * `_claudeCodeCalls`; import still reads that key.
  *
- * Import: NetLog HARs are restored with full detail; any other HAR (Chrome,
+ * Import: our own HARs are restored with full detail; any other HAR (Chrome,
  * Charles, ...) is shown generically.
  */
 
@@ -15,6 +16,8 @@ const VERSION = require('../package.json').version;
 const safeURL = (u) => { try { return new URL(u); } catch { return null; } };
 const tryJSON = (t) => { if (typeof t !== 'string') return t ?? null; try { return JSON.parse(t); } catch { return t; } };
 const bytes = (s) => (s == null ? 0 : Buffer.byteLength(s, 'utf8'));
+/** Our HAR extension block (current key, or the pre-rename one). */
+const ext = (o) => o._clogs || o._claudeCodeCalls || null;
 
 function urlFor(call, d) {
   if (call.kind === 'api') return (d.general && d.general['Request URL']) || 'https://api.anthropic.com/v1/messages';
@@ -63,7 +66,7 @@ function entryFor(pageref, call, d) {
     },
     cache: {},
     timings: { blocked: -1, dns: -1, ssl: -1, connect: -1, send: 0, wait: Math.max(0, call.durationMs || 0), receive: 0 },
-    _netlog: {
+    _clogs: {
       reconstructed: true, summary: call, kind: d.kind, general: d.general, flags: d.flags || null,
       timing: d.timing, unresolved: d.unresolved || 0, truncated: !!d.truncated, legacy: !!d.legacy, error: d.error || null,
     },
@@ -82,7 +85,7 @@ function buildHar(groups) {
       id: pageId,
       title: g.info.cwd ? `${g.info.title} — ${g.info.cwd}` : g.info.title,
       pageTimings: {},
-      _netlog: { info: g.info },
+      _clogs: { info: g.info },
     });
     for (const c of g.calls) {
       const d = g.detail(c.id);
@@ -90,7 +93,7 @@ function buildHar(groups) {
     }
   });
   entries.sort((a, b) => Date.parse(a.startedDateTime) - Date.parse(b.startedDateTime));
-  return { log: { version: '1.2', creator: { name: 'Claude NetLog', version: VERSION }, pages, entries } };
+  return { log: { version: '1.2', creator: { name: 'cLogs', version: VERSION }, pages, entries } };
 }
 
 // ---------- import ----------
@@ -112,7 +115,7 @@ class ImportedSession {
   }
 
   info() {
-    const n = this.page && this.page._netlog && this.page._netlog.info;
+    const n = this.page && (ext(this.page) || {}).info;
     const first = this.entries[0];
     const last = this.entries[this.entries.length - 1];
     return {
@@ -128,7 +131,7 @@ class ImportedSession {
 
   _summary(e, i) {
     const id = `${this.key}|${i}`;
-    const n = e._netlog;
+    const n = ext(e);
     if (n && n.summary) return { ...n.summary, id };
     const u = safeURL(e.request.url);
     const body = tryJSON(e.request.postData && e.request.postData.text);
@@ -156,7 +159,7 @@ class ImportedSession {
     const i = Number(id.split('|').pop());
     const e = this.entries[i];
     if (!e) return null;
-    const n = e._netlog || {};
+    const n = ext(e) || {};
     const summary = this._calls[i];
     const toObj = (hs) => Object.fromEntries((hs || []).map((x) => [x.name, x.value]));
     const res = tryJSON(e.response.content && e.response.content.text);

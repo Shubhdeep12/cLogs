@@ -4,14 +4,14 @@
   <meta charset="utf-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Claude NetLog</title>
+  <title>cLogs</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div id="app">
     <aside id="sidebar">
       <div class="side-head">
-        <div class="brand"><img class="brand-mark" src="../build/icon.png" alt="">Claude NetLog</div>
+        <div class="brand"><img class="brand-mark" src="../build/icon.png" alt="">cLogs</div>
         <button id="btn-roots" class="icon-btn" title="Config folders">Folders</button>
       </div>
       <div class="rec-bar">
@@ -31,7 +31,24 @@
 
     <main id="main">
       <div id="empty" class="empty">
-        <div class="empty-inner" id="empty-inner"></div>
+        <div class="empty-inner">
+          <!-- A tiny request list: rows step down like a waterfall; the newest one streams in while recording. -->
+          <svg class="empty-art" id="empty-art" viewBox="0 0 168 112" aria-hidden="true">
+            <rect class="ea-card" x="1" y="1" width="166" height="110" rx="12"/>
+            <line class="ea-rule" x1="1" y1="24" x2="167" y2="24"/>
+            <circle class="ea-dot" cx="15" cy="12.5" r="3"/><circle class="ea-dot" cx="25" cy="12.5" r="3"/><circle class="ea-dot" cx="35" cy="12.5" r="3"/>
+            <circle class="ea-rec" cx="152" cy="12.5" r="3.5"/>
+            <g class="ea-rows">
+              <rect class="ea-label" x="14" y="37" width="22" height="6" rx="3"/><rect class="ea-bar" x="46" y="37" width="44" height="6" rx="3"/>
+              <rect class="ea-label" x="14" y="52" width="22" height="6" rx="3"/><rect class="ea-bar" x="62" y="52" width="56" height="6" rx="3"/>
+              <rect class="ea-label" x="14" y="67" width="22" height="6" rx="3"/><rect class="ea-bar" x="78" y="67" width="34" height="6" rx="3"/>
+              <rect class="ea-label" x="14" y="82" width="22" height="6" rx="3"/><rect class="ea-bar ea-live" x="94" y="82" width="52" height="6" rx="3"/>
+            </g>
+          </svg>
+          <h1 id="empty-title"></h1>
+          <p id="empty-line"></p>
+          <p class="empty-foot">Local transcripts only. Nothing leaves this machine.</p>
+        </div>
       </div>
 
       <div id="session-view" hidden>

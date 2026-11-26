@@ -1,7 +1,7 @@
 {
-  "name": "claude-netlog",
-  "productName": "Claude NetLog",
-  "version": "0.2.0",
+  "name": "clogs",
+  "productName": "cLogs",
+  "version": "0.1.0",
   "description": "Live network recorder for Claude Code: every request it makes, grouped by chat session, with HAR import/export.",
   "main": "main.js",
   "license": "MIT",
@@ -18,9 +18,9 @@
     "dist:linux": "electron-builder --linux --x64 --publish never"
   },
   "build": {
-    "appId": "dev.claude-netlog.app",
-    "productName": "Claude NetLog",
-    "artifactName": "claude-netlog-${version}-${os}-${arch}.${ext}",
+    "appId": "dev.clogs.app",
+    "productName": "cLogs",
+    "artifactName": "clogs-${version}-${os}-${arch}.${ext}",
     "files": [
       "main.js",
       "preload.js",
@@ -42,7 +42,7 @@
       "icon": "build/icon.png"
     },
     "dmg": {
-      "artifactName": "claude-netlog-${version}-mac-${arch}.${ext}"
+      "artifactName": "clogs-${version}-mac-${arch}.${ext}"
     },
     "win": {
       "target": [
@@ -52,12 +52,12 @@
       "icon": "build/icon.png"
     },
     "nsis": {
-      "artifactName": "claude-netlog-${version}-win-${arch}-setup.${ext}",
+      "artifactName": "clogs-${version}-win-${arch}-setup.${ext}",
       "oneClick": false,
       "allowToChangeInstallationDirectory": true
     },
     "portable": {
-      "artifactName": "claude-netlog-${version}-win-${arch}-portable.${ext}"
+      "artifactName": "clogs-${version}-win-${arch}-portable.${ext}"
     },
     "linux": {
       "category": "Development",
@@ -66,7 +66,7 @@
         "tar.gz"
       ],
       "icon": "build/icon.png",
-      "executableName": "claude-netlog",
+      "executableName": "clogs",
       "synopsis": "Live network recorder for Claude Code"
     }
   },
@@ -74,5 +74,5 @@
     "electron": "^45.3.2",
     "electron-builder": "^26.18.0"
   },
-  "author": "Claude NetLog contributors"
+  "author": "cLogs contributors"
 }

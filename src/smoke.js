@@ -2,8 +2,8 @@
 /**
  * Self-test used by `npm run smoke`: drives the real window through recording,
  * a captured session and every detail tab, then a HAR export → import round
- * trip. Saves screenshots + report.json. Only loaded when NETLOG_SMOKE_OUT is set
- * (NETLOG_SMOKE_SINCE backdates the recording so existing activity is captured).
+ * trip. Saves screenshots + report.json. Only loaded when CALLS_SMOKE_OUT is set
+ * (CALLS_SMOKE_SINCE backdates the recording so existing activity is captured).
  */
 const fs = require('fs');
 const path = require('path');
@@ -34,7 +34,7 @@ module.exports = function runSmoke(app, outDir, hooks) {
         report.recordedSessions = await js('document.querySelectorAll(".sess").length');
         report.accountState = await js(`({ account: S.account, chips: [...document.querySelectorAll("#account-filter .chip")].map((c) => c.className + " " + c.textContent) })`);
         await shot('01-recording');
-        const want = process.env.NETLOG_SMOKE_SESSION || '';
+        const want = process.env.CALLS_SMOKE_SESSION || '';
         report.opened = await js(`(() => {
           const all = [...document.querySelectorAll('.sess')];
           const b = all.find((x) => x.title.includes(${JSON.stringify(want)})) || all[0];
@@ -60,7 +60,7 @@ module.exports = function runSmoke(app, outDir, hooks) {
         report.harInvalidEntries = bad.length;
         report.harWithBodies = har.log.entries.filter((e) => e.request.postData).length;
         hooks.importHarFile(harFile);
-        await js('netlog.state().then(applyState)');
+        await js('bridge.state().then(applyState)');
         await wait(500);
         report.importedRows = await js(`(async () => {
           const b = [...document.querySelectorAll('.sess')].pop(); b.click();

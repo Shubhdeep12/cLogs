@@ -1,4 +1,4 @@
-# Claude NetLog
+# cLogs
 
 A live network recorder for Claude Code, for macOS, Windows and Linux. It works like the Network panel in DevTools: press **Record**, use Claude Code in as many terminals as you like, and every request shows up grouped by chat session. That includes Anthropic API calls with full payloads, responses, token usage and timing, plus web fetches, web searches, MCP tool calls and `curl`/`wget` commands. **Stop**, **Clear**, and **Import / Export HAR** work as you'd expect.
 
@@ -6,28 +6,28 @@ There's no proxy, no certificates and no setup. It reads the transcripts Claude 
 
 - **Live only.** Recording starts when the app opens. Only requests that start while recording is on are listed; earlier history is never shown.
 - **Several accounts.** Each Claude config folder (for example `~/.claude` and `~/.claude-personal`) is an account. Sessions carry an account badge, the sidebar can filter by account, and **Folders** lets you switch recording on or off per account or add another config folder.
-- **HAR.** Export everything captured, or a single session, as HAR 1.2. Request and response bodies sit in the standard fields, so the file also opens in Chrome DevTools. NetLog details are stored under `_netlog`. Importing a NetLog HAR restores the full view. HARs from other tools are shown generically.
+- **HAR.** Export everything captured, or a single session, as HAR 1.2. Request and response bodies sit in the standard fields, so the file also opens in Chrome DevTools. App-specific details are stored under `_clogs` (older files using `_claudeCodeCalls` still import), so importing one of its own HARs restores the full view. HARs from other tools are shown generically.
 
 Shortcuts: Cmd/Ctrl+E start/stop · Cmd/Ctrl+K clear · Cmd/Ctrl+O import · Cmd/Ctrl+S export · ↑/↓ move through requests · Esc close the detail pane.
 
 ## Download
 
-Grab the latest build from the repository's **Releases** page:
+Get it from the website (it picks the right file for your OS): **https://shubhdeep12.github.io/clogs/**. Or grab a build directly from the repository's **Releases** page:
 
 | OS | File |
 |----|------|
-| macOS (Apple Silicon) | `claude-netlog-<version>-mac-arm64.dmg` |
-| macOS (Intel) | `claude-netlog-<version>-mac-x64.dmg` |
-| Windows | `claude-netlog-<version>-win-x64-setup.exe` (installer) or `…-portable.exe` |
-| Linux | `claude-netlog-<version>-linux-x86_64.AppImage` or `.tar.gz` |
+| macOS (Apple Silicon) | `clogs-<version>-mac-arm64.dmg` |
+| macOS (Intel) | `clogs-<version>-mac-x64.dmg` |
+| Windows | `clogs-<version>-win-x64-setup.exe` (installer) or `…-portable.exe` |
+| Linux | `clogs-<version>-linux-x86_64.AppImage` or `.tar.gz` |
 
 `SHA256SUMS.txt` on each release lists the checksums.
 
 The builds are not code-signed, so the first launch needs one extra step:
 
-- **macOS:** right-click the app → **Open** → **Open**. Or run `xattr -dr com.apple.quarantine "/Applications/Claude NetLog.app"`.
+- **macOS:** right-click the app → **Open** → **Open**. Or run `xattr -dr com.apple.quarantine "/Applications/cLogs.app"`.
 - **Windows:** SmartScreen shows "Windows protected your PC". Click **More info** → **Run anyway**.
-- **Linux:** run `chmod +x claude-netlog-*.AppImage`, then launch it. Some distros need `libfuse2` for AppImages.
+- **Linux:** run `chmod +x clogs-*.AppImage`, then launch it. Some distros need `libfuse2` for AppImages.
 
 ## Run from source
 
@@ -55,12 +55,29 @@ Build each platform on that platform. The output goes to `dist/`.
 - `.github/workflows/release.yml` builds all three platforms. To publish a release, bump `version` in `package.json`, commit, then:
 
   ```sh
-  git tag v0.2.0
-  git push origin v0.2.0
+  git tag v0.1.0
+  git push origin v0.1.0
   ```
 
   The workflow checks that the tag matches `package.json`, runs the tests, builds the installers, and publishes a GitHub Release with the files, checksums and generated notes. Running the workflow by hand (**Actions → Release → Run workflow**) builds the installers as downloadable run artifacts without publishing a release.
 - **Code signing is optional.** To sign, add electron-builder's signing secrets (`CSC_LINK`, `CSC_KEY_PASSWORD`, plus `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD` and `APPLE_TEAM_ID` for notarization) and remove `CSC_IDENTITY_AUTO_DISCOVERY: "false"` from the workflow.
+
+## Website
+
+The download page lives in `site/`. It's [Astro](https://astro.build): static HTML with self-hosted fonts and one small script that reads the latest GitHub Release and points the download button at the right file for the visitor's OS.
+
+```sh
+cd site && npm install && npm run dev
+```
+
+`.github/workflows/site.yml` deploys it to GitHub Pages on every push to `main` that touches `site/`. One-time setup: **Settings → Pages → Source: GitHub Actions**.
+
+To serve it from a custom domain such as `clogs.okshubh.in`:
+1. Add the domain under **Settings → Pages → Custom domain**.
+2. Create a DNS `CNAME` record from `clogs` to `shubhdeep12.github.io`.
+3. Re-run the Site workflow.
+
+The base path and canonical URLs adjust automatically.
 
 ## Where the data comes from
 
@@ -114,6 +131,7 @@ src/smoke.js       self-test: `npm run smoke -- <outDir> [session] [hours-back]`
 renderer/          UI (plain HTML/CSS/JS, no build step)
 build/icon.svg     app icon source (build/icon.png is rendered from it)
 scripts/           verify, smoke runner, icon renderer
+site/              download page (Astro), deployed to GitHub Pages
 test/              unit tests (node:test) + synthetic transcript fixture
 .github/workflows/ CI and release pipelines
 ```

@@ -11,9 +11,9 @@ const r = spawnSync(electron, [path.join(__dirname, '..')], {
   stdio: 'inherit',
   env: {
     ...process.env,
-    NETLOG_SMOKE_OUT: out,
-    NETLOG_SMOKE_SESSION: process.argv[3] || '',
-    NETLOG_SMOKE_SINCE: String(Date.now() - Number(process.argv[4] || 3) * 3600 * 1000),
+    CALLS_SMOKE_OUT: out,
+    CALLS_SMOKE_SESSION: process.argv[3] || '',
+    CALLS_SMOKE_SINCE: String(Date.now() - Number(process.argv[4] || 3) * 3600 * 1000),
   },
   timeout: 90000,
 });

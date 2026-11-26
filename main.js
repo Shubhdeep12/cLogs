@@ -85,7 +85,7 @@ function harFor(scope) {
   if (!v) throw new Error('Nothing to export');
   if (v.imported) {
     const s = v.imported;
-    return { log: { version: '1.2', creator: { name: 'Claude NetLog', version: app.getVersion() }, pages: s.page ? [s.page] : [], entries: s.entries } };
+    return { log: { version: '1.2', creator: { name: 'cLogs', version: app.getVersion() }, pages: s.page ? [s.page] : [], entries: s.entries } };
   }
   return buildHar([{ info: v.info(), calls: v.calls(), detail: v.detail }]);
 }
@@ -132,7 +132,7 @@ function registerIpc() {
   ipcMain.handle('har:export', async (_e, scope) => {
     const r = await dialog.showSaveDialog(win, {
       title: 'Export HAR',
-      defaultPath: `claude-netlog-${stamp()}.har`,
+      defaultPath: `clogs-${stamp()}.har`,
       filters: [{ name: 'HAR', extensions: ['har', 'json'] }],
     });
     if (r.canceled || !r.filePath) return null;
@@ -204,7 +204,7 @@ function createWindow() {
     height: 920,
     minWidth: 960,
     minHeight: 560,
-    title: 'Claude NetLog',
+    title: 'cLogs',
     backgroundColor: '#16171a',
     icon: path.join(__dirname, 'build', 'icon.png'),
     webPreferences: {
@@ -259,8 +259,8 @@ function buildMenu() {
   ]));
 }
 
-if (process.env.NETLOG_SMOKE_OUT) {
-  require('./src/smoke')(app, process.env.NETLOG_SMOKE_OUT, { writeHar, importHarFile, state });
+if (process.env.CALLS_SMOKE_OUT) {
+  require('./src/smoke')(app, process.env.CALLS_SMOKE_OUT, { writeHar, importHarFile, state });
 }
 
 app.whenReady().then(async () => {
@@ -271,7 +271,7 @@ app.whenReady().then(async () => {
   buildMenu();
   createWindow();
   // Like DevTools, start recording as soon as the app opens.
-  const since = Number(process.env.NETLOG_SMOKE_SINCE) || undefined;
+  const since = Number(process.env.CALLS_SMOKE_SINCE) || undefined;
   await recorder.start({ since });
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 });
